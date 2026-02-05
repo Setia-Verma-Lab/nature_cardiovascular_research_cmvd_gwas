@@ -1,6 +1,9 @@
-# nature_communications_cmvd_gwas_2025
+# Nature Communications CMVD GWAS 2025
 
-## In this repo you will find the following directories
+## This repository includes code used to generate data and figures in this publication
+## DOI:
+## Email questions to: marie.guerraty@pennmedicine.upenn.edu and ssverma@pennmedciine.upenn.edu
+
 ### CAD GWAS
 ### IHD GWAS
 ### Heritability Analysis
