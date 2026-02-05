@@ -4,11 +4,11 @@
 ### DOI:
 ### Email questions to: marie.guerraty@pennmedicine.upenn.edu and ssverma@pennmedciine.upenn.edu
 
-### CAD GWAS
-### IHD GWAS
-### Heritability Analysis
-### Power Analysis
-### Fine Mapping
-### Transcription Wide Association Study (TWAS)
-### Differential Gene Expression Analysis
-### Protein Wide Association Study (PWAS)
+#### CAD GWAS
+#### IHD GWAS
+#### Heritability Analysis
+#### Power Analysis
+#### Fine Mapping
+#### Transcription Wide Association Study (TWAS)
+#### Pathway Analysis
+#### Protein Wide Association Study (PWAS)
