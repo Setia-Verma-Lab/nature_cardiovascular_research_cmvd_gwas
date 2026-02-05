@@ -4,8 +4,8 @@
 ### DOI:
 ### Email questions to: marie.guerraty@pennmedicine.upenn.edu and ssverma@pennmedciine.upenn.edu
 
-#### CAD GWAS
 #### IHD GWAS
+#### MBFR GWAS
 #### Heritability Analysis
 #### Power Analysis
 #### Fine Mapping
