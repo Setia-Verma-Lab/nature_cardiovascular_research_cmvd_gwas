@@ -11,4 +11,4 @@
 #### Fine Mapping
 #### Transcription Wide Association Study (TWAS)
 #### Pathway Analysis
-#### Protein Wide Association Study (PWAS)
+#### Proteomic Analysis
