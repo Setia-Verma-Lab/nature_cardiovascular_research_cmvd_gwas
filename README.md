@@ -1,4 +1,4 @@
-# Nature Communications CMVD GWAS 2025
+# Nature Cardiovascular Research CMVD GWAS 2025
 
 #### This repository includes code used to generate data and figures in this publication
 #### DOI:
