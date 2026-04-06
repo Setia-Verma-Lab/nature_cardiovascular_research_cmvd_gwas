@@ -1,0 +1,262 @@
+---
+title: "make_circos"
+author: "NAME"
+date: "DATE"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# readme: make inner scatterplot for circlize plot
+# notes: should be generalizable with maybe some tweaks to the label spacing
+# also note that certain points are outside of plotting region,
+# I believe this is due to the ideogram and the data not having the same 
+# chromosome lengths ?
+
+rm(list = ls())
+
+library(dplyr)
+library(circlize)
+```
+
+################################################################################
+#                                 variables                                    #
+################################################################################
+```{r}
+# inputs 
+gene.path <- file.path("/path/Circos/processed", "gene_track_data_gr")
+het.path_AFR <- file.path("/path/Circos/processed", "heterozygosity_data_AFR_5e-4_gr")
+het.path_EUR <- file.path("/path/Circos/processed", "heterozygosity_data_EUR_5e-4_gr")
+man.path <- file.path("/path/Circos/processed", "manhattan_data_gr")
+twas.path <- file.path("/path/Circos/processed", "twas_data_gr")
+```
+
+```{r}
+# outputs
+plot.out <- file.path("circlize_plot_CMVD.DATE.pdf") 
+```
+
+```{r}
+# plot variables
+gwas.line <- -log10(5e-8)
+twas.line <- -log10(0.05/(5959+14035+13201)) # Bonferroni threshold
+col.known.genes <- "#0072B2" # known gene labels
+col.novel.genes <- "#D55E00" # unknown gene labels
+col.het.bg <- "#B3E2D5" # background for heterozygosity track
+col.het.pch <- "#009E73" # points for heterozygosity track
+col.het2.bg <- "#E6E6FA" # background for heterozygosity track
+col.het2.pch <- "#800080" # points for heterozygosity track
+col.genes.ns <- "#000080"
+# col.genes.ns <- "lightgray"
+# colors for manhattan plot points set in data format function
+```
+
+
+################################################################################
+#                               loading zone                                   #
+################################################################################
+```{r}
+load(gene.path)
+load(het.path_AFR)
+load(het.path_EUR)
+load(man.path)
+load(twas.path)
+
+# want to make the twas value1 upside-down
+#twas_gr5$value1 <- twas_gr5$value1*(-1)
+
+dim(gene.bed)
+dim(het.data_AFR)
+dim(het.data_EUR)
+dim(mega.bed_gr)
+dim(twas_gr5)
+```
+################################################################################
+#                               circos circus                                  #
+################################################################################
+```{r}
+#png(plot.out)
+pdf(plot.out)
+#pdf("plot.pdf", width = 14, height = 14)
+
+circos.clear()
+
+circos.par("start.degree" = 90, # set circos parameters
+           gap.degree = c(rep(1, 21), 8), # small gap between chrs + larger for axis
+           track.margin = c(0.005, 0.005), # remove the spaces between the tracks
+           cell.padding = c(0.001, 0.01, 0.01, 0.001))
+
+# initialize a genomics template
+circos.initializeWithIdeogram(plotType = NULL,         
+                              species = "hg38", 
+                              chromosome.index = paste0("chr", c(1:22)))
+
+# Keep only the important genes
+gene.bed2 = gene.bed[gene.bed$group=="Important",]
+
+circos.genomicLabels(gene.bed2,
+                     labels.column = 4,
+                     side = "outside",
+                     cex = 0.5, # Decreased from 0.3 --> 0.2
+                     line_lwd = 0.8,
+                     connection_height = convert_height(4, "mm"), # increased from 3 to 4
+                     #line_col = "blue",
+                     #col = "blue")
+                     line_col =  "black",
+                     col =  "black")
+
+
+# chromosome track
+circos.track(ylim = c(0, 1),                       
+             panel.fun = function(x, y) {
+               chr  = gsub("chr", CELL_META$sector.index, replace = "")
+               xlim = CELL_META$xlim
+               ylim = CELL_META$ylim
+               circos.rect(xlim[1], 0, xlim[2], 1, 
+                           col = "white", 
+                           cex = 0.2,  # Increased from 0.2 --> 0.3
+                           lwd = 0.5 ) # thinner box outline
+               circos.text(mean(xlim), mean(ylim), 
+                           chr, 
+                           cex = 0.4, 
+                           col = "black",
+                           facing = "inside", 
+                           niceFacing = TRUE)
+             }, 
+             track.height = 0.03, 
+             bg.border = NA)
+#test = mega.bed_gr[mega.bed_gr$value1>1,]
+# manhattan plot
+circos.genomicTrack(mega.bed_gr,
+#circos.genomicTrack(mega.bed_gr[mega.bed_gr$value1>1,],
+                    ylim = c(0, 8),
+                    #ylim = c(floor(min(mega.bed$value1)), 
+                     #        ceiling(max(mega.bed$value1))),
+                    panel.fun = function(region, value, ...) {
+                      circos.genomicPoints(region, 
+                                           value, 
+                                           numeric.column = 1,
+                                           col = "black",
+                                           #col = value[, 2],
+                                           pch = 16, 
+                                           cex = 0.3, ...)
+                      i = getI(...)
+                      cell.xlim = get.cell.meta.data("cell.xlim")
+                      circos.lines(cell.xlim, c(gwas.line, gwas.line),
+                                   lty = 2, col = "#D55E00")
+                    },
+                    track.height = 0.18,
+                    bg.border = NA,
+                    bg.col = "gray96")
+circos.yaxis(side = "left",                 
+             at = c(floor(min(mega.bed_gr$value1)), 
+                    2, 4, 6, 8),
+             labels = c("", 2, 4, 6, 8),
+              #labels = c(floor(min(mega.bed$value1)), 
+               #         10, 20, 30),
+             sector.index = get.all.sector.index()[1],
+             labels.cex = 0.4, # Increased from 0.3 --> 0.4
+             lwd = 0.3, 
+             tick.length = 0.5*(convert_x(1, "mm", 
+                                          get.cell.meta.data("sector.index"), 
+                                          get.cell.meta.data("track.index"))))
+
+# TWAS manhattan plot
+circos.genomicTrack(twas_gr5,
+                    ylim = c(-8, 0),
+                    panel.fun = function(region, value, ...) {
+                      circos.genomicPoints(region, 
+                                           value, 
+                                           numeric.column = 1,
+                                           col = value$value2,
+                                           pch = 16, 
+                                           cex = 0.5, ...)
+                      i = getI(...)
+                      cell.xlim = get.cell.meta.data("cell.xlim")
+                      circos.lines(cell.xlim, c(-twas.line, -twas.line),
+                                   lty = 2, col = "#D55E00")
+                    },
+                    track.height = 0.18,
+                    bg.border = NA,
+                    bg.col = "gray96")
+circos.yaxis(side = "left",                 
+             at = c(floor(min(twas_gr5$value1)), 
+                    -2, -4, -6, -8),
+             labels = c("", 2, 4, 6, 8),
+             #labels = c(floor(min(mega.bed$value1)), 
+             #         10, 20, 30),
+             sector.index = get.all.sector.index()[1],
+             labels.cex = 0.4, # Increased from 0.3 --> 0.4
+             lwd = 0.3, 
+             tick.length = 0.5*(convert_x(1, "mm", 
+                                          get.cell.meta.data("sector.index"), 
+                                          get.cell.meta.data("track.index"))))
+
+circos.genomicTrack(het.data_AFR,
+                    stack = TRUE, 
+                    panel.fun = function(region, value, ...) {
+                      circos.genomicPoints(region, 
+                                           value, 
+                                           col = col.het.pch,
+                                           pch = 16, 
+                                           #cex = value[[1]]/100,
+                                           cex = value[[1]]/75,
+                                           #cex = value[[1]]/50,
+                                            ...)
+                      i = getI(...)
+                      cell.xlim = get.cell.meta.data("cell.xlim")
+                      # circos.lines(cell.xlim, c(i, i), lty = 2, col = "#FFFFFF")
+                      },
+                    track.height = 0.05,
+                    bg.border = NA,
+                    bg.col = col.het.bg)
+circos.yaxis(side = "left",
+             at = ceiling(max(het.data_AFR$value1)/100), # midpoint where 100 = 2*50 (divisor from cex)
+             labels = expression(),
+             #labels = expression(AFR),
+             #labels = expression(P[het]),
+             labels.cex = 0.3, # Increased from 0.3 --> 0.4
+             sector.index = get.all.sector.index()[1],
+             lwd = 0.3,
+             tick = FALSE) 
+
+# EUR
+circos.genomicTrack(het.data_EUR,
+                    stack = TRUE, 
+                    panel.fun = function(region, value, ...) {
+                      circos.genomicPoints(region, 
+                                           value, 
+                                           col = col.het2.pch,
+                                           pch = 16, 
+                                           #cex = value[[1]]/100,
+                                           cex = value[[1]]/75,
+                                           #cex = value[[1]]/50,
+                                           ...)
+                      i = getI(...)
+                      cell.xlim = get.cell.meta.data("cell.xlim")
+                      # circos.lines(cell.xlim, c(i, i), lty = 2, col = "#FFFFFF")
+                    },
+                    track.height = 0.05,
+                    bg.border = NA,
+                    bg.col = col.het2.bg)
+circos.yaxis(side = "left",
+             at = ceiling(max(het.data_EUR$value1)/100), # midpoint where 100 = 2*50 (divisor from cex)
+             labels = expression(),
+             #labels = expression(EUR),
+             #labels = expression(P[het]),
+             labels.cex = 0.3, # Increased from 0.3 --> 0.4
+             sector.index = get.all.sector.index()[1],
+             lwd = 0.3,
+             tick = FALSE) 
+
+
+
+
+dev.off()
+```
+
